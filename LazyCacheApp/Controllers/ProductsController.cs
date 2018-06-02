@@ -6,22 +6,32 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using LazyCacheApp.Models;
+using LazyCache;
 
 namespace LazyCacheApp.Controllers
 {
     public class ProductsController : Controller
     {
+        private readonly IAppCache _cache;
         private readonly LazyCacheAppContext _context;
 
-        public ProductsController(LazyCacheAppContext context)
+        public ProductsController(LazyCacheAppContext context, IAppCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         // GET: Products
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Product.ToListAsync());
+            // define a func to get the products but do not Execute() it
+            Func<IEnumerable<Product>> productGetter = () => _context.Product.ToList();
+
+            // get the results from the cache based on a unique key, or 
+            // execute the func and cache the results
+            var productsWithCaching = _cache.GetOrAdd("ProductsController.Get", productGetter);
+
+            return View(productsWithCaching);
         }
 
         // GET: Products/Details/5
@@ -59,6 +69,7 @@ namespace LazyCacheApp.Controllers
             {
                 _context.Add(product);
                 await _context.SaveChangesAsync();
+                _cache.Remove("ProductsController.Get"); // Clear cache
                 return RedirectToAction(nameof(Index));
             }
             return View(product);

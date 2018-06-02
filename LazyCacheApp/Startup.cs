@@ -38,6 +38,10 @@ namespace LazyCacheApp
 
             services.AddDbContext<LazyCacheAppContext>(options =>
                     options.UseSqlServer(Configuration.GetConnectionString("LazyCacheAppContext")));
+
+            // Register LazyCache - makes the IAppCache implementation
+            // CachingService available to your code
+            services.AddLazyCache();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
